@@ -1,0 +1,90 @@
+---
+title: "Chopped"
+author: "Ashleigh Novak"
+date: "8/25/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+#library(wesanderson)
+library(ggridges)
+library(ggthemes)
+library(lubridate)
+library(viridis)
+```
+
+
+```{r}
+chopped <- readr::read_tsv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-25/chopped.tsv')
+
+glimpse(chopped)
+```
+
+#Ggridges plot
+
+```{r}
+#Data manipulation
+judge_time <- chopped %>% 
+  pivot_longer(cols=8:10,
+               names_to = "Judge",
+               values_to = "Name") %>% 
+  select("air_date", "series_episode", "Judge", "Name") %>% 
+  mutate(air_date = as.Date.character(mdy(air_date)))
+
+#Fix names
+judge_time$Name[judge_time$Name=="Aarón Sanchez"] <- "Aarón Sánchez"
+judge_time$Name[judge_time$Name=="Amanda Freita"] <- "Amanda Freitag"
+judge_time$Name[judge_time$Name=="Chris Santo"] <- "Chris Santos"
+
+judge_time2 <- judge_time %>% 
+  filter(!is.na(Name)) %>% 
+  group_by(Name) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+#top ten
+# Alex Guarnaschelli	208
+# Amanda Freitag	206
+# Scott Conant	194
+# Marc Murphy	191
+# Chris Santos	185
+# Geoffrey Zakarian	183
+# Aarón Sánchez	140
+# Maneet Chauhan	128
+# Marcus Samuelsson	78
+# Martha Stewart 16
+
+occurence <- judge_time %>% 
+  filter(!is.na(Name)) %>% 
+  group_by(Name, air_date)
+
+target <- c("Alex Guarnaschelli",
+"Amanda Freitag",
+"Scott Conant",
+"Marc Murphy",
+"Chris Santos",
+"Geoffrey Zakarian",
+"Aarón Sánchez",
+"Maneet Chauhan",
+"Marcus Samuelsson",
+"Martha Stewart")
+
+p1 <- occurence %>% 
+#  slice(1:10) %>% 
+  filter(Name %in% target) %>% 
+ggplot(aes(x = air_date, y = Name, fill= Name)) +
+  geom_density_ridges(alpha = 0.9, scale = 5) +
+  scale_fill_viridis_d() +
+  #scale_fill_brewer(palette = "Spectral") +
+  labs(
+    title = "Top 10 judges appearances over time",
+    subtitle = "Some judges are more consistent in appearing on episodes over time than others") +
+  xlab("Air Date") +
+  theme_ridges(font_size = 13, grid = TRUE) + 
+  theme(axis.title.y = element_blank(),
+        legend.position = "none")
+  
+p1
+```
+
